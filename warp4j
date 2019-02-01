@@ -1,0 +1,123 @@
+#!/bin/bash
+
+JDK_VERSION=11.0.2
+JDK_URL_BASE=https://download.java.net/java/GA/jdk11/9/GPL
+APP_NAME=sm2csv
+
+TARGETS=(linux osx windows)
+
+JDK_DISTRO_FILES=(\
+    openjdk-"$JDK_VERSION"_${TARGETS[0]}-x64_bin.tar.gz \
+    openjdk-"$JDK_VERSION"_${TARGETS[1]}-x64_bin.tar.gz \
+    openjdk-"$JDK_VERSION"_${TARGETS[2]}-x64_bin.zip
+)
+
+DIR="$(cd "$(dirname "$0")" ; pwd -P)"
+JAR_PATH=$DIR/fatjar/$APP_NAME.jar
+JDK_DOWNLOAD_PATH=$DIR/jdk
+BUNDLES_PATH=$DIR/bundle
+WARPED_PATH=$DIR/warped
+LAUNCHER_PATH=$DIR/launcher
+
+JAVA_HOME="$JDK_DOWNLOAD_PATH/linux"
+JLINK="$JAVA_HOME/bin/jlink"
+
+if [ ! -d $JDK_DOWNLOAD_PATH ]; then
+    mkdir -p $JDK_DOWNLOAD_PATH
+    echo "Downloading JDKs..."
+    for file_name in ${JDK_DISTRO_FILES[@]}; do
+        echo "$file_name..."
+        curl --progress-bar \
+            $JDK_URL_BASE/$file_name \
+            --output $JDK_DOWNLOAD_PATH/$file_name
+    done
+
+    echo "Uncompressing JDKs..."
+    (cd $JDK_DOWNLOAD_PATH
+    echo "${TARGETS[0]}..."
+    rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[0]}
+    mkdir -p $JDK_DOWNLOAD_PATH/${TARGETS[0]}
+    tar --strip-components=1 -C ${TARGETS[0]} -xzf ${JDK_DISTRO_FILES[0]} 
+    
+    echo "${TARGETS[1]}..."
+    rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[1]}
+    mkdir -p $JDK_DOWNLOAD_PATH/${TARGETS[1]}
+    tar --strip-components=4 -C ${TARGETS[1]} -xzf ${JDK_DISTRO_FILES[1]} \
+        ./jdk-$JDK_VERSION.jdk/Contents/Home
+
+    echo "${TARGETS[2]}..."
+    rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[2]}
+    unzip -oq ${JDK_DISTRO_FILES[2]}
+    mv jdk-$JDK_VERSION ${TARGETS[2]}
+    )
+
+    # check if downloaded successfully
+    if [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[0]}/bin/java ] || \
+       [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[1]}/bin/java ] || \
+       [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[2]}/bin/java.exe ]; then
+        echo "Failed to download JDKs"
+        exit 1
+    fi
+else
+    echo "JDKs already present, skip download"
+fi
+
+rm -rf $BUNDLES_PATH
+
+echo "Creating minimal JDKs..."
+for target in ${TARGETS[@]}; do
+    echo "${target}..."
+    $JLINK \
+        --no-header-files \
+        --no-man-pages \
+        --module-path $JDK_DOWNLOAD_PATH/${target}/jmods \
+        --add-modules $(jdeps --print-module-deps $JAR_PATH | grep -v Warning) \
+        --output $BUNDLES_PATH/${target}/jdk
+done
+
+echo "Adding launchers..."
+cp $LAUNCHER_PATH/$APP_NAME.sh $BUNDLES_PATH/${TARGETS[0]}/
+cp $LAUNCHER_PATH/$APP_NAME.sh $BUNDLES_PATH/${TARGETS[1]}/
+cp $LAUNCHER_PATH/$APP_NAME.cmd $BUNDLES_PATH/${TARGETS[2]}/
+
+echo "Adding jars..."
+cp $JAR_PATH $BUNDLES_PATH/${TARGETS[0]}/
+cp $JAR_PATH $BUNDLES_PATH/${TARGETS[1]}/
+cp $JAR_PATH $BUNDLES_PATH/${TARGETS[2]}/
+
+rm -rf $WARPED_PATH
+
+echo "Warping linux target..."
+mkdir -p $WARPED_PATH/${TARGETS[0]}
+warp-packer \
+    --arch linux-x64 \
+    --input_dir $BUNDLES_PATH/${TARGETS[0]} \
+    --exec $APP_NAME.sh \
+    --output $WARPED_PATH/${TARGETS[0]}/$APP_NAME
+tar -C $WARPED_PATH/${TARGETS[0]} -czf $WARPED_PATH/$APP_NAME.${TARGETS[0]}-x64.tar.gz $APP_NAME
+mv $WARPED_PATH/${TARGETS[0]}/$APP_NAME $WARPED_PATH/$APP_NAME-${TARGETS[0]}
+rmdir $WARPED_PATH/${TARGETS[0]}
+
+echo "Warping osx target..."
+mkdir -p $WARPED_PATH/${TARGETS[1]}
+warp-packer \
+    --arch macos-x64 \
+    --input_dir $BUNDLES_PATH/${TARGETS[1]} \
+    --exec $APP_NAME.sh \
+    --output $WARPED_PATH/${TARGETS[1]}/$APP_NAME
+tar -C $WARPED_PATH/${TARGETS[1]} -czf $WARPED_PATH/$APP_NAME.${TARGETS[1]}-x64.tar.gz $APP_NAME
+mv $WARPED_PATH/${TARGETS[1]}/$APP_NAME $WARPED_PATH/$APP_NAME-${TARGETS[1]}
+rmdir $WARPED_PATH/${TARGETS[1]}
+
+echo "Warping windows target..."
+mkdir -p $WARPED_PATH/${TARGETS[2]}
+warp-packer \
+    --arch windows-x64 \
+    --input_dir $BUNDLES_PATH/${TARGETS[2]} \
+    --exec $APP_NAME.cmd \
+    --output $WARPED_PATH/${TARGETS[2]}/$APP_NAME.exe
+(cd $WARPED_PATH/${TARGETS[2]}
+zip -r $WARPED_PATH/$APP_NAME.${TARGETS[2]}-x64.zip $APP_NAME.exe
+)
+mv $WARPED_PATH/${TARGETS[2]}/$APP_NAME.exe $WARPED_PATH/
+rmdir $WARPED_PATH/${TARGETS[2]}
