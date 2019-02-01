@@ -23,8 +23,23 @@ $ warp4j my-app.jar
 ...
 ...
 
-$ ls
-my-app.jar my-app-linux my-app-macos my-app.exe
+$ ls -1
+my-app.jar
+warped
+
+$ ls warped
+my-app-linux
+my-app.linux-x64.tar.gz
+my-app-osx
+my-app.osx-x64.tar.gz
+my-app-windows.exe
+my-app.windows-x64.zip
+```
+
+See help:
+
+```bash
+$ wapr4j --help
 ```
 
 ## Cache Location
