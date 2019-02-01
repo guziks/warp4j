@@ -1,8 +1,104 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
+function print_help {
+    echo
+    echo 'Usage: warp4j [options] <file.jar>'
+    echo
+    echo 'Turn Java application into self-contained executable'
+    echo
+    echo 'Options:'
+    echo '  --jdk-version    <version>'
+    echo '                   override JDK version'
+    echo '                   examples: "11.0.2", TODO more'
+    echo '  --jvm-options    <options>'
+    echo '                   passed to java before "-jar"'
+    echo '  --launcher-shell <path to shell script>'
+    echo '                   custom launcher for Linux and MacOS'
+    echo '                   (not implemented)'
+    echo '  --launcher-cmd   <path to cmd script>'
+    echo '                   custom launcher for Windows'
+    echo '                   (not implemented)'
+    exit
+}
+
+# default options
 JDK_VERSION=11.0.2
+LAUNCHER_SHELL=""
+LAUNCHER_CMD=""
+JVM_OPTIONS=""
+
+if [[ $# -eq 0 ]]; then
+    print_help
+    exit
+fi
+
+# parse arguments
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+    -h|--help)
+        print_help
+        exit
+    ;;
+    --jdk-version)
+        JDK_VERSION="$2"
+        shift 2
+    ;;
+    --launcher-shell)
+        LAUNCHER_SHELL="$2"
+        shift 2
+    ;;
+    --launcher-cmd)
+        LAUNCHER_CMD="$2"
+        shift 2
+    ;;
+    --jvm-options)
+        JVM_OPTIONS="$2"
+        shift 2
+    ;;
+    -*|--*) # unsupported flags
+        echo "Error: Unsupported flag $1" >&2
+        exit 1
+    ;;
+    *)
+        POSITIONAL+=("$1") # store positional arguments
+        shift
+    ;;
+    esac
+done
+set -- "${POSITIONAL[@]}" # restore positional arguments
+
+if [[ $# -gt 1 ]]; then
+    echo "Error: Too many arguments: $@, expecting only jar name" >&2
+    print_help
+    exit 1
+else
+    JAR=$1
+fi
+
+JAR_FILE_BASE_NAME=$(basename -- "$JAR")
+JAR_EXTENSION="${JAR_FILE_BASE_NAME##*.}"
+JAR_EXTENSION_LOWERCASE=$(printf "%s" "$JAR_EXTENSION" | tr '[:upper:]' '[:lower:]')
+JAR_NAME="${JAR_FILE_BASE_NAME%.*}"
+
+# checking jar file exists
+if [[ ! -e $JAR ]]; then
+    echo "Error: File \"$JAR\" does not exist" >&2
+    exit 1
+fi
+
+# checking file is actually java archive
+if [[ $(file $JAR) != *"Zip"* ]] ||
+   [[ $JAR_EXTENSION_LOWERCASE != "jar" ]]; then
+    echo "Error: File \"$JAR\" is not a java archive" >&2
+    exit 1
+fi
+
+APP_NAME=$JAR_NAME
+LAUNCHER_NAME=$JAR_NAME
+
 JDK_URL_BASE=https://download.java.net/java/GA/jdk11/9/GPL
-APP_NAME=sm2csv
 
 TARGETS=(linux osx windows)
 
@@ -12,112 +108,157 @@ JDK_DISTRO_FILES=(\
     openjdk-"$JDK_VERSION"_${TARGETS[2]}-x64_bin.zip
 )
 
-DIR="$(cd "$(dirname "$0")" ; pwd -P)"
-JAR_PATH=$DIR/fatjar/$APP_NAME.jar
-JDK_DOWNLOAD_PATH=$DIR/jdk
-BUNDLES_PATH=$DIR/bundle
+DIR="$(pwd -P)"
+CACHE_PATH=$HOME/.local/share/warp4j
+JDK_DOWNLOAD_PATH=$CACHE_PATH/jdk
+BUNDLES_PATH=$CACHE_PATH/bundle
 WARPED_PATH=$DIR/warped
-LAUNCHER_PATH=$DIR/launcher
 
 JAVA_HOME="$JDK_DOWNLOAD_PATH/linux"
 JLINK="$JAVA_HOME/bin/jlink"
 
-if [ ! -d $JDK_DOWNLOAD_PATH ]; then
-    mkdir -p $JDK_DOWNLOAD_PATH
-    echo "Downloading JDKs..."
-    for file_name in ${JDK_DISTRO_FILES[@]}; do
-        echo "$file_name..."
-        curl --progress-bar \
-            $JDK_URL_BASE/$file_name \
-            --output $JDK_DOWNLOAD_PATH/$file_name
-    done
+function print_launcher_bash() {
+printf "%s" \
+'#!/usr/bin/env bash
 
-    echo "Uncompressing JDKs..."
-    (cd $JDK_DOWNLOAD_PATH
-    echo "${TARGETS[0]}..."
-    rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[0]}
-    mkdir -p $JDK_DOWNLOAD_PATH/${TARGETS[0]}
-    tar --strip-components=1 -C ${TARGETS[0]} -xzf ${JDK_DISTRO_FILES[0]} 
-    
-    echo "${TARGETS[1]}..."
-    rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[1]}
-    mkdir -p $JDK_DOWNLOAD_PATH/${TARGETS[1]}
-    tar --strip-components=4 -C ${TARGETS[1]} -xzf ${JDK_DISTRO_FILES[1]} \
-        ./jdk-$JDK_VERSION.jdk/Contents/Home
+JAVA_DIST=jdk
+JAR='$JAR_NAME'.jar
 
-    echo "${TARGETS[2]}..."
-    rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[2]}
-    unzip -oq ${JDK_DISTRO_FILES[2]}
-    mv jdk-$JDK_VERSION ${TARGETS[2]}
-    )
+DIR="$(cd "$(dirname "$0")" ; pwd -P)"
+JAVA=$DIR/$JAVA_DIST/bin/java
+JAR_PATH=$DIR/$JAR
 
-    # check if downloaded successfully
-    if [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[0]}/bin/java ] || \
-       [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[1]}/bin/java ] || \
-       [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[2]}/bin/java.exe ]; then
-        echo "Failed to download JDKs"
-        exit 1
+exec $JAVA '$JVM_OPTIONS' -jar $JAR_PATH $@
+' 
+}
+
+function print_launcher_cmd() {
+printf "%s" \
+'@ECHO OFF
+
+SETLOCAL
+
+SET "JAVA_DIST=jdk"
+SET "JAR='$JAR_NAME'.jar"
+
+SET "JAVA=%~dp0\%JAVA_DIST%\bin\java.exe"
+SET "JAR_PATH=%~dp0\%JAR%"
+
+CALL %JAVA% '$JVM_OPTIONS' -jar %JAR_PATH% %*
+EXIT /B %ERRORLEVEL%
+' 
+}
+
+function download_jdks() {
+    if [ ! -d $JDK_DOWNLOAD_PATH ]; then
+        mkdir -p $JDK_DOWNLOAD_PATH
+        echo "Downloading JDKs..."
+        for file_name in ${JDK_DISTRO_FILES[@]}; do
+            echo "$file_name..."
+            curl --progress-bar \
+                $JDK_URL_BASE/$file_name \
+                --output $JDK_DOWNLOAD_PATH/$file_name
+        done
+
+        echo "Uncompressing JDKs..."
+        (cd $JDK_DOWNLOAD_PATH
+        echo "${TARGETS[0]}..."
+        rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[0]}
+        mkdir -p $JDK_DOWNLOAD_PATH/${TARGETS[0]}
+        tar --strip-components=1 -C ${TARGETS[0]} -xzf ${JDK_DISTRO_FILES[0]} 
+        
+        echo "${TARGETS[1]}..."
+        rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[1]}
+        mkdir -p $JDK_DOWNLOAD_PATH/${TARGETS[1]}
+        tar --strip-components=4 -C ${TARGETS[1]} -xzf ${JDK_DISTRO_FILES[1]} \
+            ./jdk-$JDK_VERSION.jdk/Contents/Home
+
+        echo "${TARGETS[2]}..."
+        rm -rf $JDK_DOWNLOAD_PATH/${TARGETS[2]}
+        unzip -oq ${JDK_DISTRO_FILES[2]}
+        mv jdk-$JDK_VERSION ${TARGETS[2]}
+        )
+
+        # check if downloaded successfully
+        if [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[0]}/bin/java ] || \
+        [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[1]}/bin/java ] || \
+        [ ! -f $JDK_DOWNLOAD_PATH/${TARGETS[2]}/bin/java.exe ]; then
+            echo "Error: Failed to download JDKs" >&2
+            exit 1
+        fi
+    else
+        echo "JDKs already present, skip download"
     fi
-else
-    echo "JDKs already present, skip download"
-fi
+}
 
-rm -rf $BUNDLES_PATH
+function create_optimized_jdks() {
+    echo "Creating minimal JDKs..."
+    for target in ${TARGETS[@]}; do
+        echo "${target}..."
+        $JLINK \
+            --no-header-files \
+            --no-man-pages \
+            --module-path $JDK_DOWNLOAD_PATH/${target}/jmods \
+            --add-modules $(jdeps --print-module-deps $JAR | grep -v Warning) \
+            --output $BUNDLES_PATH/${target}/jdk
+    done
+}
 
-echo "Creating minimal JDKs..."
-for target in ${TARGETS[@]}; do
-    echo "${target}..."
-    $JLINK \
-        --no-header-files \
-        --no-man-pages \
-        --module-path $JDK_DOWNLOAD_PATH/${target}/jmods \
-        --add-modules $(jdeps --print-module-deps $JAR_PATH | grep -v Warning) \
-        --output $BUNDLES_PATH/${target}/jdk
-done
+function create_bundles() {
+    rm -rf $BUNDLES_PATH
 
-echo "Adding launchers..."
-cp $LAUNCHER_PATH/$APP_NAME.sh $BUNDLES_PATH/${TARGETS[0]}/
-cp $LAUNCHER_PATH/$APP_NAME.sh $BUNDLES_PATH/${TARGETS[1]}/
-cp $LAUNCHER_PATH/$APP_NAME.cmd $BUNDLES_PATH/${TARGETS[2]}/
+    create_optimized_jdks
 
-echo "Adding jars..."
-cp $JAR_PATH $BUNDLES_PATH/${TARGETS[0]}/
-cp $JAR_PATH $BUNDLES_PATH/${TARGETS[1]}/
-cp $JAR_PATH $BUNDLES_PATH/${TARGETS[2]}/
+    echo "Adding launchers..."
+    print_launcher_bash > $BUNDLES_PATH/${TARGETS[0]}/$LAUNCHER_NAME.sh
+    print_launcher_bash > $BUNDLES_PATH/${TARGETS[1]}/$LAUNCHER_NAME.sh
+    print_launcher_cmd  > $BUNDLES_PATH/${TARGETS[2]}/$LAUNCHER_NAME.cmd
 
-rm -rf $WARPED_PATH
+    echo "Adding jars..."
+    cp $JAR $BUNDLES_PATH/${TARGETS[0]}/
+    cp $JAR $BUNDLES_PATH/${TARGETS[1]}/
+    cp $JAR $BUNDLES_PATH/${TARGETS[2]}/
+}
 
-echo "Warping linux target..."
-mkdir -p $WARPED_PATH/${TARGETS[0]}
-warp-packer \
-    --arch linux-x64 \
-    --input_dir $BUNDLES_PATH/${TARGETS[0]} \
-    --exec $APP_NAME.sh \
-    --output $WARPED_PATH/${TARGETS[0]}/$APP_NAME
-tar -C $WARPED_PATH/${TARGETS[0]} -czf $WARPED_PATH/$APP_NAME.${TARGETS[0]}-x64.tar.gz $APP_NAME
-mv $WARPED_PATH/${TARGETS[0]}/$APP_NAME $WARPED_PATH/$APP_NAME-${TARGETS[0]}
-rmdir $WARPED_PATH/${TARGETS[0]}
+function warp_targets() {
+    rm -rf $WARPED_PATH
 
-echo "Warping osx target..."
-mkdir -p $WARPED_PATH/${TARGETS[1]}
-warp-packer \
-    --arch macos-x64 \
-    --input_dir $BUNDLES_PATH/${TARGETS[1]} \
-    --exec $APP_NAME.sh \
-    --output $WARPED_PATH/${TARGETS[1]}/$APP_NAME
-tar -C $WARPED_PATH/${TARGETS[1]} -czf $WARPED_PATH/$APP_NAME.${TARGETS[1]}-x64.tar.gz $APP_NAME
-mv $WARPED_PATH/${TARGETS[1]}/$APP_NAME $WARPED_PATH/$APP_NAME-${TARGETS[1]}
-rmdir $WARPED_PATH/${TARGETS[1]}
+    echo "Warping linux target..."
+    mkdir -p $WARPED_PATH/${TARGETS[0]}
+    warp-packer \
+        --arch linux-x64 \
+        --input_dir $BUNDLES_PATH/${TARGETS[0]} \
+        --exec $LAUNCHER_NAME.sh \
+        --output $WARPED_PATH/${TARGETS[0]}/$APP_NAME
+    tar -C $WARPED_PATH/${TARGETS[0]} -czf $WARPED_PATH/$APP_NAME.${TARGETS[0]}-x64.tar.gz $APP_NAME
+    mv $WARPED_PATH/${TARGETS[0]}/$APP_NAME $WARPED_PATH/$APP_NAME-${TARGETS[0]}
+    rmdir $WARPED_PATH/${TARGETS[0]}
 
-echo "Warping windows target..."
-mkdir -p $WARPED_PATH/${TARGETS[2]}
-warp-packer \
-    --arch windows-x64 \
-    --input_dir $BUNDLES_PATH/${TARGETS[2]} \
-    --exec $APP_NAME.cmd \
-    --output $WARPED_PATH/${TARGETS[2]}/$APP_NAME.exe
-(cd $WARPED_PATH/${TARGETS[2]}
-zip -r $WARPED_PATH/$APP_NAME.${TARGETS[2]}-x64.zip $APP_NAME.exe
-)
-mv $WARPED_PATH/${TARGETS[2]}/$APP_NAME.exe $WARPED_PATH/
-rmdir $WARPED_PATH/${TARGETS[2]}
+    echo "Warping osx target..."
+    mkdir -p $WARPED_PATH/${TARGETS[1]}
+    warp-packer \
+        --arch macos-x64 \
+        --input_dir $BUNDLES_PATH/${TARGETS[1]} \
+        --exec $LAUNCHER_NAME.sh \
+        --output $WARPED_PATH/${TARGETS[1]}/$APP_NAME
+    tar -C $WARPED_PATH/${TARGETS[1]} -czf $WARPED_PATH/$APP_NAME.${TARGETS[1]}-x64.tar.gz $APP_NAME
+    mv $WARPED_PATH/${TARGETS[1]}/$APP_NAME $WARPED_PATH/$APP_NAME-${TARGETS[1]}
+    rmdir $WARPED_PATH/${TARGETS[1]}
+
+    echo "Warping windows target..."
+    mkdir -p $WARPED_PATH/${TARGETS[2]}
+    warp-packer \
+        --arch windows-x64 \
+        --input_dir $BUNDLES_PATH/${TARGETS[2]} \
+        --exec $LAUNCHER_NAME.cmd \
+        --output $WARPED_PATH/${TARGETS[2]}/$APP_NAME.exe
+    (cd $WARPED_PATH/${TARGETS[2]}
+    zip -r $WARPED_PATH/$APP_NAME.${TARGETS[2]}-x64.zip $APP_NAME.exe
+    )
+    mv $WARPED_PATH/${TARGETS[2]}/$APP_NAME.exe $WARPED_PATH/$APP_NAME-windows.exe
+    rmdir $WARPED_PATH/${TARGETS[2]}
+}
+
+download_jdks
+create_bundles
+warp_targets
