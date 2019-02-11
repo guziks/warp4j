@@ -62,6 +62,30 @@ function get_this_platform() {
 
 THIS_PLATFORM=$(get_this_platform)
 
+# check if all dependencies available
+function check_deps() {
+    local deps=("warp-packer" \
+                "curl" \
+                "awk" \
+                "sed")
+    local missing=()
+    for d in ${deps[@]}; do
+        if ! command -v $d &> /dev/null ; then
+            missing+=($d)
+        fi
+    done
+    if [[ $missing ]]; then
+        echo -n "Error: Missing dependencies: " >&2
+        for d in ${missing[@]}; do
+            echo -n "$d " >&2
+        done
+        echo >&2
+        fail
+    fi
+}
+
+check_deps
+
 if [[ $# -eq 0 ]]; then
     print_help
     exit
