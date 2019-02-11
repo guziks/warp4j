@@ -100,7 +100,7 @@ while [[ $# -gt 0 ]]; do
         print_help
         exit
     ;;
-    --java-version)
+    -j|--java-version)
         JAVA_VERSION="$2"
         JAVA_VERSION_OVERRIDEN=true
         shift 2
