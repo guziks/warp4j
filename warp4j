@@ -303,7 +303,8 @@ function find_latest_cached() {
     local platform_dir=$JAVA_DOWNLOAD_PATH/$platform/
     # turning something like "11.0.1+13" into regexp like "^11\.0\.1\+13"
     local pattern="^"$(echo $user_version | sed -e 's/\./\\\./g' -e 's/\+/\\\+/g')
-    local versions=$(ls -1 $platform_dir 2> /dev/null | sort -r)
+    local versions=$(ls -1 $platform_dir 2> /dev/null \
+                   | sort --reverse --version-sort)
     local version
     for v in ${versions[@]}; do
         if [[ -e $platform_dir/$v/$MARKER_DOWNLOADED ]] &&
@@ -339,7 +340,7 @@ function find_latest_version() {
     local versions # all versions
     versions=$(echo "$info" \
             | grep '"semver"' \
-            | sort -r \
+            | sort --reverse --version-sort \
             | awk '{print $2}' \
             | sed -e 's/"//g' -e 's/,//')
     # turning something like "11.0.1+13" into regexp like "^11\.0\.1\+13"
