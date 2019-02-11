@@ -38,11 +38,12 @@ function fail() {
    kill -s TERM $TOP_PID
 }
 
-# target IDs
+# platform IDs
 LIN=linux
 MAC=macos
 WIN=windows
 
+# returns this platform ID
 function get_this_platform() {
     case "$(uname -s)" in
         Linux*) echo $LIN ;;
@@ -58,7 +59,7 @@ function get_this_platform() {
 
 THIS_PLATFORM=$(get_this_platform)
 
-# check if all dependencies available
+# checks if all dependencies are available
 function check_deps() {
     local deps=("warp-packer" \
                 "curl" \
@@ -80,6 +81,7 @@ function check_deps() {
     fi
 }
 
+# actually check dependencies
 check_deps
 
 # show help if no arguments specified
@@ -159,7 +161,7 @@ else
     JAR=$1
 fi
 
-# check if java version specified correctly
+# checks if java version specified correctly
 function java_version_is_correct() {
     local pattern="^[0-9]+(\.[0-9]+(\.[0-9]+(\+[0-9]+)?)?)?$"
     local version=$1
@@ -187,20 +189,20 @@ if [[ $JVM_IMPL ]] &&
     exit 1
 fi
 
-LATEST_LTS=11
+LATEST_LTS=11 # latest LTS java branch
 
 # default options
 test -z $JAVA_VERSION && JAVA_VERSION=$LATEST_LTS
 test -z $TARGETS && TARGETS=($LIN $MAC $WIN)
 test -z $JVM_IMPL && JVM_IMPL=$JVM_IMPL_HOTSPOT
 
-JAR_FILE_BASE_NAME=$(basename -- "$JAR")
-JAR_EXTENSION="${JAR_FILE_BASE_NAME##*.}"
-JAR_EXTENSION_LOWERCASE=$(printf "%s" "$JAR_EXTENSION" | tr '[:upper:]' '[:lower:]')
-JAR_NAME="${JAR_FILE_BASE_NAME%.*}"
+JAR_FILE_BASE_NAME=$(basename -- "$JAR") # "my-app.jAr"
+JAR_EXTENSION="${JAR_FILE_BASE_NAME##*.}" # "jAr" 
+JAR_EXTENSION_LOWERCASE=$(printf "%s" "$JAR_EXTENSION" | tr '[:upper:]' '[:lower:]') # "jar"
+JAR_NAME="${JAR_FILE_BASE_NAME%.*}" # "my-app"
 
-APP_NAME=$JAR_NAME
-LAUNCHER_NAME=$JAR_NAME
+APP_NAME=$JAR_NAME # final binary name
+LAUNCHER_NAME=$JAR_NAME # launcher name inside bundle
 
 # checking jar file exists
 if [[ ! -e $JAR ]]; then
@@ -215,16 +217,19 @@ if [[ $(file $JAR) != *"Zip"* ]] ||
     exit 1
 fi
 
+# returns java branch version
 function get_base_version() {
     local version=$1
     echo `echo $version | cut -d"." -f1`
 }
 
+# actually set java branch
 JAVA_VERSION_BASE=$(get_base_version $JAVA_VERSION)
 
 DISTRO_TYPE_JRE=jre
 DISTRO_TYPE_JDK=jdk
 
+# chooses what to use, JDK or JRE
 function choose_distro_type() {
     if [[ $JAVA_VERSION_BASE == 8 ]] ||
        [[ $NO_OPTIMIZE ]]; then
@@ -234,23 +239,26 @@ function choose_distro_type() {
     fi
 }
 
+# actually choose distro type
 JAVA_DISTRO_TYPE=$(choose_distro_type)
 
+# choose cache path for this platform
 case $THIS_PLATFORM in
     $MAC) CACHE_PATH="$HOME/Library/Application Support/warp4j" ;;
     $WIN) CACHE_PATH='%LOCALAPPDATA%\warp4j';;
     *)    CACHE_PATH="$HOME/.local/share/warp4j" ;;
 esac
 
+# this is not full path, platform name and full version will be added
 JAVA_DOWNLOAD_PATH=$CACHE_PATH/$JAVA_DISTRO_TYPE/$JVM_IMPL
-BUNDLES_PATH=$CACHE_PATH/bundle
+BUNDLES_PATH=$CACHE_PATH/bundle # prepare bundles here
 
-# execution directory path
-DIR="$(pwd -P)"
+DIR="$(pwd -P)" # execution directory path
 WARPED_PATH=$DIR/warped
 
-BUNDLED_DISTRO_SUBDIR="java"
+BUNDLED_DISTRO_SUBDIR="java" # runtime directory inside a bundle
 
+# prints a launcher for bash
 function print_launcher_bash() {
 printf "%s" \
 '#!/usr/bin/env bash
@@ -266,6 +274,7 @@ exec $JAVA '$JVM_OPTIONS' -jar $JAR_PATH $@
 ' 
 }
 
+# prints a launcher for windows cmd
 function print_launcher_cmd() {
 printf "%s" \
 '@ECHO OFF
@@ -283,6 +292,7 @@ EXIT /B %ERRORLEVEL%
 ' 
 }
 
+# generates adoptopenjdk api url
 function api_url() {
     local request=$1 # info/binary
     local platform=$2 # windows/linux/macos
@@ -298,10 +308,11 @@ arch=x64&\
 type=$JAVA_DISTRO_TYPE"
 }
 
-MARKER_DOWNLOADED="downloaded"
-MARKER_UNPACKED="unpacked"
+# these files are success markers
+MARKER_DOWNLOADED="downloaded" # after runtime download
+MARKER_UNPACKED="unpacked" # after runtime uncompress
 
-# find latest cached version that matches version specifies by user
+# returns latest cached version that matches version specified by user
 function find_latest_cached() {
     local platform=$1 # in terms of adoptopenjdk.net: windows, linux, mac
     local user_version=$2
@@ -325,6 +336,7 @@ function find_latest_cached() {
     fi
 }
 
+# requests info about all releases for given platform and java branch
 function fetch_distro_info() {
     local platform=$1 # in terms of adoptopenjdk.net: windows, linux, mac
     local branch=$2 # 8/9/10/11...
@@ -336,8 +348,7 @@ function fetch_distro_info() {
     fi
 }
 
-# searches for latest concrete distro version that matches
-# version supplied by user
+# finds latest concrete distro version that matches version specified by user
 function find_latest_version() {
     local info=$1 # info fetched from AdoptOpenJDK
     local user_version=$2 # version supplied by user is a template
@@ -363,6 +374,7 @@ function find_latest_version() {
     echo $matched_version
 }
 
+# finds direct link to download concrete runtime version
 function find_distro_link() {
     local info=$1 # info fetched from AdoptOpenJDK
     local version=$2 # concrete distro version like "11.0.2+9"
@@ -378,6 +390,7 @@ function find_distro_link() {
     echo "$link"
 }
 
+# downloads runtime distro
 function download_distro() {
     local platform=$1
     local version=$2
@@ -397,7 +410,7 @@ function download_distro() {
     )
 }
 
-# ensure if required distro is in cache 
+# ensures required distro is in cache 
 function ensure_distro_cached() {
     local platform=$1
     local distro_info
@@ -437,12 +450,14 @@ function ensure_distro_cached() {
     fi
 }
 
+# actually ensure required distro is in cache
 for target in ${TARGETS[@]}; do
     ensure_distro_cached $target
 done
 
 UNPACKED_SUBDIR="distro"
 
+# ensures required distro uncompressed 
 function ensure_distro_unpacked() {
     local platform=$1
     local version=$2
@@ -481,6 +496,7 @@ function ensure_distro_unpacked() {
     fi
 }
 
+# actually ensure required distro uncompressed 
 for target in ${TARGETS[@]}; do
     ensure_distro_unpacked $target $CONCRETE_JAVA_VERSION
 done
@@ -488,11 +504,14 @@ done
 JLINK=$JAVA_DOWNLOAD_PATH/$THIS_PLATFORM/$CONCRETE_JAVA_VERSION/$UNPACKED_SUBDIR/bin/jlink
 JDEPS=$JAVA_DOWNLOAD_PATH/$THIS_PLATFORM/$CONCRETE_JAVA_VERSION/$UNPACKED_SUBDIR/bin/jdeps
 
+# modules are only needed if JDK optimisation is performed
 if [[ $JAVA_DISTRO_TYPE == $DISTRO_TYPE_JDK ]]; then
     echo "Analyzing dependencies..."
+    # TODO check for errors
     MODULES=$($JDEPS --print-module-deps $JAR | grep -v Warning)
 fi
 
+# creates minimized runtime for the platform
 function create_optimized_runtime() {
     local platform=$1
     local jmods=$JAVA_DOWNLOAD_PATH/$platform/$CONCRETE_JAVA_VERSION/$UNPACKED_SUBDIR/jmods
@@ -509,6 +528,7 @@ function create_optimized_runtime() {
     fi
 }
 
+# creates warp bundle for the platform
 function create_bundle() {
     local platform=$1
     case $JAVA_DISTRO_TYPE in
@@ -530,11 +550,14 @@ function create_bundle() {
     cp $JAR $BUNDLES_PATH/$platform/
 }
 
+# remove old bundles
 rm -rf $BUNDLES_PATH
+# actually create bundles for all targets
 for target in ${TARGETS[@]}; do
     create_bundle $target
 done
 
+# creates binaries and archives for all targets
 function warp_targets() {
     if [[ ${TARGETS[*]} == *"$LIN"* ]]; then
         echo "Warping for $LIN..."
@@ -581,5 +604,7 @@ function warp_targets() {
     fi
 }
 
+# remove old binaries
 rm -rf $WARPED_PATH
+# actually create binaries and archives for all targets
 warp_targets
