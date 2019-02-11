@@ -16,7 +16,7 @@ Just put both `warp4j` and `warp-packer` somewhere in your PATH and run `warp4j 
 
 First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure other common tools available: `curl`, `awk`, `sed`. Then install `warp4j` like this:
 
-```bash
+```
 $ LOCATION=/usr/local/bin \
 LINK=https://raw.githubusercontent.com/guziks/warp4j/master/warp4j \
 TEMP_LOCATION=/tmp/warp4j \
@@ -27,7 +27,7 @@ sudo mv $TEMP_LOCATION $LOCATION/warp4j
 
 ## Usage
 
-```bash
+```
 $ ls
 my-app.jar
 
@@ -51,7 +51,7 @@ my-app-windows-x64.zip
 
 See help:
 
-```bash
+```
 $ wapr4j --help
 
 Usage: warp4j [options] <app.jar>
