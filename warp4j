@@ -199,6 +199,9 @@ JAR_EXTENSION="${JAR_FILE_BASE_NAME##*.}"
 JAR_EXTENSION_LOWERCASE=$(printf "%s" "$JAR_EXTENSION" | tr '[:upper:]' '[:lower:]')
 JAR_NAME="${JAR_FILE_BASE_NAME%.*}"
 
+APP_NAME=$JAR_NAME
+LAUNCHER_NAME=$JAR_NAME
+
 # checking jar file exists
 if [[ ! -e $JAR ]]; then
     echo "Error: File \"$JAR\" does not exist" >&2
@@ -233,13 +236,17 @@ function choose_distro_type() {
 
 JAVA_DISTRO_TYPE=$(choose_distro_type)
 
-APP_NAME=$JAR_NAME
-LAUNCHER_NAME=$JAR_NAME
+case $THIS_PLATFORM in
+    $MAC) CACHE_PATH="$HOME/Library/Application Support/warp4j" ;;
+    $WIN) CACHE_PATH='%LOCALAPPDATA%\warp4j';;
+    *)    CACHE_PATH="$HOME/.local/share/warp4j" ;;
+esac
 
-DIR="$(pwd -P)"
-CACHE_PATH=$HOME/.local/share/warp4j
 JAVA_DOWNLOAD_PATH=$CACHE_PATH/$JAVA_DISTRO_TYPE/$JVM_IMPL
 BUNDLES_PATH=$CACHE_PATH/bundle
+
+# execution directory path
+DIR="$(pwd -P)"
 WARPED_PATH=$DIR/warped
 
 BUNDLED_DISTRO_SUBDIR="java"
