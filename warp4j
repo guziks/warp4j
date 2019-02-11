@@ -254,7 +254,7 @@ JAVA_DOWNLOAD_PATH=$CACHE_PATH/$JAVA_DISTRO_TYPE/$JVM_IMPL
 BUNDLES_PATH=$CACHE_PATH/bundle # prepare bundles here
 
 DIR="$(pwd -P)" # execution directory path
-WARPED_PATH=$DIR/warped
+WARPED_PATH=$DIR/warped # final binaries go here
 
 BUNDLED_DISTRO_SUBDIR="java" # runtime directory inside a bundle
 
@@ -318,7 +318,8 @@ function find_latest_cached() {
     local user_version=$2
     local platform_dir=$JAVA_DOWNLOAD_PATH/$platform/
     # turning something like "11.0.1+13" into regexp like "^11\.0\.1\+13"
-    local pattern="^"$(echo $user_version | sed -e 's/\./\\\./g' -e 's/\+/\\\+/g')
+    local pattern="^"$(echo $user_version \
+                     | sed -e 's/\./\\\./g' -e 's/\+/\\\+/g')
     local versions=$(ls -1 $platform_dir 2> /dev/null \
                    | sort --reverse --version-sort)
     local version
@@ -338,7 +339,7 @@ function find_latest_cached() {
 
 # requests info about all releases for given platform and java branch
 function fetch_distro_info() {
-    local platform=$1 # in terms of adoptopenjdk.net: windows, linux, mac
+    local platform=$1 3 platform ID
     local branch=$2 # 8/9/10/11...
     echo "Fetching $JVM_IMPL-$JAVA_DISTRO_TYPE-$branch-$platform info ..." >&2 # TODO remove
     curl -s $(api_url info $platform)
@@ -360,6 +361,7 @@ function find_latest_version() {
             | awk '{print $2}' \
             | sed -e 's/"//g' -e 's/,//')
     # turning something like "11.0.1+13" into regexp like "^11\.0\.1\+13"
+    # remember that user may provide shorter version like "11", "11.0", "11.0.1"
     local pattern="^"$(echo $user_version | sed -e 's/\./\\\./g' -e 's/\+/\\\+/g')
     for v in ${versions[@]}; do
         if [[ $v =~ $pattern ]]; then
