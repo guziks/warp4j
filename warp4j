@@ -2,40 +2,36 @@
 
 function print_help {
     echo
-    echo 'Usage: warp4j [options] <file.jar>'
+    echo 'Usage: warp4j [options] <app.jar>'
     echo
-    echo 'Turn Java application into self-contained executable'
+    echo 'Turn JAR (java application archive) into self-contained executable'
     echo
     echo 'Options:'
-    echo '  --java-version   <version>'
-    echo '                   override JDK/JRE version'
-    echo '                   examples: "11", "11.0", "11.0.2", "11.0.2+9"'
-    echo '                   default: 11'
-    echo '  --no-optimize    use JRE instead of optimized JDK'
-    echo '                   by default jdeps and jlink are used to create'
-    echo '                   optimized JDK for the partiular jar,'
-    echo '                   JRE is always used for java 8'
-    echo '  --pull           check if more recent JDK/JRE distro is available'
-    echo '                   by default latest cached version that matches'
-    echo '                   "--java-version" is used'
-    echo '  --target-linux   create binary for Linux'
-    echo '  --target-macos   create binary for macOS'
-    echo '  --target-windows create binary for Windows'
-    echo '                   if no targets specified then create for all'
-    echo '  --jvm-impl       jvm implementation: hotspot or openj9'
-    echo '                   default: hotspot'
-    echo '  --jvm-options    <options>'
-    echo '                   passed to java like this:'
-    echo '                   "java <options> -jar <jar file>"'
-    echo '  --launcher-shell <path to shell script>'
-    echo '                   custom launcher for Linux and macOS'
-    echo '                   (not implemented)'
-    echo '  --launcher-cmd   <path to cmd script>'
-    echo '                   custom launcher for Windows'
-    echo '                   (not implemented)'
+    echo '  -j, --java-version   <version>'
+    echo '                       override JDK/JRE version'
+    echo '                       examples: "11", "11.0", "11.0.2", "11.0.2+9"'
+    echo '                       default: 11'
+    echo '  --no-optimize        use JRE instead of optimized JDK'
+    echo '                       by default jdeps and jlink are used to create'
+    echo '                       optimized JDK for the partiular jar,'
+    echo '                       JRE is always used for java 8'
+    echo '  --pull               check if more recent JDK/JRE distro is available'
+    echo '                       by default latest cached version that matches'
+    echo '                       "--java-version" is used'
+    echo '  --target-linux       create binary for Linux'
+    echo '  --target-macos       create binary for macOS'
+    echo '  --target-windows     create binary for Windows'
+    echo '                       if no targets specified then create for all'
+    echo '  --jvm-impl           jvm implementation: hotspot or openj9'
+    echo '                       default: hotspot'
+    echo '  --jvm-options        <options>'
+    echo '                       passed to java like this:'
+    echo '                       "java <options> -jar <jar file>"'
+    echo '  -h, --help           show this help'
     exit
 }
 
+# exit top level program from subshell
 trap "exit 1" TERM
 export TOP_PID=$$
 function fail() {
@@ -86,6 +82,7 @@ function check_deps() {
 
 check_deps
 
+# show help if no arguments specified
 if [[ $# -eq 0 ]]; then
     print_help
     exit
@@ -153,6 +150,7 @@ while [[ $# -gt 0 ]]; do
 done
 set -- "${POSITIONAL[@]}" # restore positional arguments
 
+# apart from options only one argument is allowed
 if [[ $# -gt 1 ]]; then
     echo "Error: Too many arguments: $@, expecting only jar name" >&2
     print_help
