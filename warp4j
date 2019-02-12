@@ -4,7 +4,7 @@ function print_help {
     echo
     echo 'Usage: warp4j [options] <app.jar>'
     echo
-    echo 'Turn JAR (java application archive) into self-contained executable'
+    echo 'Turn JAR (java archive) into self-contained executable'
     echo
     echo 'Options:'
     echo '  -j, --java-version   <version>'

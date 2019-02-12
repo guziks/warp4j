@@ -1,6 +1,6 @@
 # Warp4j
 
-Turn JAR (java application archive) into self-contained executable. 
+Turn JAR (java archive) into self-contained executable. 
 
 ## Features
 
@@ -56,7 +56,7 @@ $ wapr4j --help
 
 Usage: warp4j [options] <app.jar>
 
-Turn JAR (java application archive) into self-contained executable
+Turn JAR (java archive) into self-contained executable
 
 Options:
   -j, --java-version   <version>
