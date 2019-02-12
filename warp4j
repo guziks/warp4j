@@ -45,44 +45,18 @@ WIN=windows
 
 # returns this platform ID
 function get_this_platform() {
-    case "$(uname -s)" in
+    local this_platform="$(uname -s)"
+    case $this_platform in
         Linux*) echo $LIN ;;
         Darwin*) echo $MAC ;;
         CYGWIN*) echo $WIN ;;
         MINGW*) echo $WIN ;;
         *)
-            echo "Error: Unsupported platform" >&2
+            echo "Error: Unsupported platform $this_platform" >&2
             fail
         ;;
     esac
 }
-
-THIS_PLATFORM=$(get_this_platform)
-
-# checks if all dependencies are available
-function check_deps() {
-    local deps=("warp-packer" \
-                "curl" \
-                "awk" \
-                "sed")
-    local missing=()
-    for d in ${deps[@]}; do
-        if ! command -v $d &> /dev/null ; then
-            missing+=($d)
-        fi
-    done
-    if [[ $missing ]]; then
-        echo -n "Error: Missing dependencies: " >&2
-        for d in ${missing[@]}; do
-            echo -n "$d " >&2
-        done
-        echo >&2
-        fail
-    fi
-}
-
-# actually check dependencies
-check_deps
 
 # show help if no arguments specified
 if [[ $# -eq 0 ]]; then
@@ -151,6 +125,33 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 set -- "${POSITIONAL[@]}" # restore positional arguments
+
+THIS_PLATFORM=$(get_this_platform)
+
+# checks if all dependencies are available
+function check_deps() {
+    local deps=("warp-packer" \
+                "curl" \
+                "awk" \
+                "sed")
+    local missing=()
+    for d in ${deps[@]}; do
+        if ! command -v $d &> /dev/null ; then
+            missing+=($d)
+        fi
+    done
+    if [[ $missing ]]; then
+        echo -n "Error: Missing dependencies: " >&2
+        for d in ${missing[@]}; do
+            echo -n "$d " >&2
+        done
+        echo >&2
+        fail
+    fi
+}
+
+# actually check dependencies
+check_deps
 
 # apart from options only one argument is allowed
 if [[ $# -gt 1 ]]; then
