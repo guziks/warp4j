@@ -20,9 +20,9 @@ First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure
 $ LOCATION=/usr/local/bin \
 LINK=https://raw.githubusercontent.com/guziks/warp4j/master/warp4j \
 TEMP_LOCATION=/tmp/warp4j \
-curl -fsSL -o $TEMP_LOCATION $LINK && \
+bash -c 'curl -fsSL -o $TEMP_LOCATION $LINK && \
 chmod 755 $TEMP_LOCATION && \
-sudo mv $TEMP_LOCATION $LOCATION/warp4j
+sudo mv $TEMP_LOCATION $LOCATION/warp4j'
 ```
 
 ## Usage
