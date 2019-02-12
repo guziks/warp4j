@@ -113,15 +113,15 @@ while [[ $# -gt 0 ]]; do
         shift
     ;;
     --target-linux)
-        TARGETS+=$LIN
+        TARGETS+=($LIN)
         shift
     ;;
     --target-macos)
-        TARGETS+=$MAC
+        TARGETS+=($MAC)
         shift
     ;;
     --target-windows)
-        TARGETS+=$WIN
+        TARGETS+=($WIN)
         shift
     ;;
     --jvm-impl)
