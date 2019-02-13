@@ -22,6 +22,7 @@ LINK=https://raw.githubusercontent.com/guziks/warp4j/master/warp4j \
 TEMP_LOCATION=/tmp/warp4j \
 bash -c 'curl -fsSL -o $TEMP_LOCATION $LINK && \
 chmod 755 $TEMP_LOCATION && \
+sudo mkdir -p $LOCATION && \
 sudo mv $TEMP_LOCATION $LOCATION/warp4j'
 ```
 
