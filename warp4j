@@ -286,7 +286,7 @@ DIR="$(cd "$(dirname "$0")" ; pwd -P)"
 JAVA=$DIR/$JAVA_DIST/bin/java
 JAR_PATH=$DIR/$JAR
 
-exec $JAVA '$JVM_OPTIONS' -jar $JAR_PATH $@
+exec $JAVA '"$JVM_OPTIONS"' -jar $JAR_PATH $@
 ' 
 }
 
@@ -303,7 +303,7 @@ SET "JAR='$JAR_NAME'.jar"
 SET "JAVA=%~dp0\%JAVA_DIST%\bin\java.exe"
 SET "JAR_PATH=%~dp0\%JAR%"
 
-CALL %JAVA% '$JVM_OPTIONS' -jar %JAR_PATH% %*
+CALL %JAVA% '"$JVM_OPTIONS"' -jar %JAR_PATH% %*
 EXIT /B %ERRORLEVEL%
 ' 
 }
