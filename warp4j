@@ -540,6 +540,7 @@ function create_optimized_runtime() {
     $JLINK \
         --no-header-files \
         --no-man-pages \
+        --strip-debug \
         --module-path $jmods \
         --add-modules $MODULES \
         --output $BUNDLES_PATH/$platform/$BUNDLED_DISTRO_SUBDIR
