@@ -130,10 +130,16 @@ THIS_PLATFORM=$(get_this_platform)
 
 # checks if all dependencies are available
 function check_deps() {
-    local deps=("warp-packer" \
-                "curl" \
-                "awk" \
-                "sed")
+    local deps=( 
+        "awk" \
+        "curl" \
+        "grep" \
+        "sed" \
+        "sort" \
+        "tar" \
+        "unzip" \
+        "warp-packer" \
+    )
     local missing=()
     for d in ${deps[@]}; do
         if ! command -v $d &> /dev/null ; then
