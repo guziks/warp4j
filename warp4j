@@ -497,8 +497,19 @@ function ensure_distro_unpacked() {
                 tar --strip-components=1 -C $unpacked_dir -xzf $download_dir/*.tar.gz
             ;;
             $MAC)
+                # to uncompess distro for macOS we need to use wildcards
+                # to use wildcards with GNU tar (on Linux) '--wildcard' option is required
+                # to use wildcards with BSD tar (on macOS) no options required
+                # if invoked with '--wildcards' BSD tar with exit with message:
+                # "Option --wildcards is not supported"
+                local tar_cmd
+                if tar --wildcards 2>&1 | grep "not supported" > /dev/null ; then
+                    tar_cmd="tar"
+                else
+                    tar_cmd="tar --wildcards"
+                fi
                 mkdir -p $unpacked_dir
-                tar --wildcards --strip-components=3 -C $unpacked_dir -xzf $download_dir/*.tar.gz \
+                $tar_cmd --strip-components=3 -C $unpacked_dir -xzf $download_dir/*.tar.gz \
                     "jdk*/Contents/Home"
             ;;
             $WIN)
