@@ -27,7 +27,9 @@ function print_help {
     echo '  --jvm-options        <options>'
     echo '                       passed to java like this:'
     echo '                       "java <options> -jar <jar file>"'
-    echo '  -h, --help           show this help'
+    echo '                       use quotes, for example:'
+    echo "                       '-Xms512m -Xmx1024m'"
+    echo '  -h, --help           show this message'
     exit
 }
 

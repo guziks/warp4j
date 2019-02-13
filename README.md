@@ -6,7 +6,7 @@ Turn JAR (java archive) into self-contained executable.
 
 - automatically downloads java runtimes
 - creates runtimes optimized for your application
-- creates self-contained binaries for Linux, MacOS and Windows using [warp-packer](https://github.com/dgiagio/warp)
+- creates self-contained binaries for Linux, macOS and Windows using [warp-packer](https://github.com/dgiagio/warp)
 
 ## TL;DR
 
@@ -79,7 +79,9 @@ Options:
   --jvm-options        <options>
                        passed to java like this:
                        "java <options> -jar <jar file>"
-  -h, --help           show this help
+                       use quotes, for example:
+                       '-Xms512m -Xmx1024m'
+  -h, --help           show this message
 ```
 
 ## Cache Location
