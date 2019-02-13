@@ -439,8 +439,8 @@ function ensure_distro_cached() {
         if [[ -z $JAVA_VERSION_OVERRIDEN ]]; then
             if [[ ! $(find_latest_cached $platform $LATEST_LTS) ]]; then
                 distro_info=$(fetch_distro_info $platform $LATEST_LTS)
-                CONCRETE_JAVA_VERSION=$(find_latest_version $distro_info $LATEST_LTS)
-                distro_link=$(find_distro_link $distro_info $CONCRETE_JAVA_VERSION)
+                CONCRETE_JAVA_VERSION=$(find_latest_version "$distro_info" $LATEST_LTS)
+                distro_link=$(find_distro_link "$distro_info" $CONCRETE_JAVA_VERSION)
                 download_distro $platform $CONCRETE_JAVA_VERSION $distro_link
             else
                 CONCRETE_JAVA_VERSION=$(find_latest_cached $platform $LATEST_LTS)
