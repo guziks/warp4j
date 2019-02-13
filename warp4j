@@ -355,9 +355,9 @@ function find_latest_cached() {
 
 # requests info about all releases for given platform and java branch
 function fetch_distro_info() {
-    local platform=$1 3 platform ID
+    local platform=$1 # platform ID
     local branch=$2 # 8/9/10/11...
-    echo "Fetching $JVM_IMPL-$JAVA_DISTRO_TYPE-$branch-$platform info ..." >&2 # TODO remove
+    echo "Fetching $JVM_IMPL-$JAVA_DISTRO_TYPE-$branch-$platform info..." >&2
     curl -s $(api_url info $platform)
     if [[ $? != 0 ]]; then
         echo "Error: Failed to fetch JDK $branch info for $platform" >&2
