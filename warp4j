@@ -218,7 +218,7 @@ if [[ ! -e $JAR ]]; then
 fi
 
 # checking file is actually java archive
-if [[ $(file $JAR) != *"Zip"* ]] ||
+if [[ $(file $JAR) != *"archive"* ]] || # it could be "Java archive data" or "Zip archive data"
    [[ $JAR_EXTENSION_LOWERCASE != "jar" ]]; then
     echo "Error: File \"$JAR\" is not a java archive" >&2
     exit 1
