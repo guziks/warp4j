@@ -3,6 +3,13 @@
 # install location
 LOCATION=/usr/local/bin
 
+# exit top level program from subshell
+trap "exit 1" TERM
+export TOP_PID=$$
+function fail() {
+   kill -s TERM $TOP_PID
+}
+
 # platform IDs
 LIN=linux
 MAC=macos
@@ -27,17 +34,18 @@ THIS_PLATFORM=$(get_this_platform)
 # fetches latest release download link for the platform
 function get_latest_warp_link() {
     local this_platform=$1
-    echo $(curl -fsSL "https://api.github.com/repos/dgiagio/warp/releases" \
+    local info
+    info=$(curl -fsSL https://api.github.com/repos/dgiagio/warp/releases)
+    if [[ $? != 0 ]]; then
+        echo "Error: Failed to get information about releases" >&2
+        fail
+    fi
+    echo "$info" \
         | grep "browser_download_url" \
         | grep "$this_platform-x64.warp-packer" \
         | head -n 1 \
         | awk '{print $2}' \
         | sed -e 's/"//g'
-    )
-    if [[ $? != 0 ]]; then
-        echo "Error: Failed to get information about releases" >&2
-        exit 1
-    fi
 }
 
 # downloads and installs single binary
@@ -49,16 +57,16 @@ function install() {
     curl -fsSL -o "$temp_location" "$link"
     if [[ $? != 0 ]]; then
         echo "Error: Failed to download $name" >&2
-        exit 1
+        fail
     fi
-    echo "Installing $name..."
+    echo "Installing $LOCATION/$name..."
     chmod 755 "$temp_location" && \
     sudo chown root:root "$temp_location" && \
     sudo mkdir -p "$LOCATION" && \
     sudo mv "$temp_location" "$LOCATION/$name"
     if [[ $? != 0 ]]; then
         echo "Error: Failed to install $name" >&2
-        exit 1
+        fail
     fi
 }
 
