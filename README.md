@@ -1,12 +1,14 @@
 # Warp4j
 
-Turn JAR (java archive) into self-contained executable. 
+Turn JAR (java archive) into self-contained executable in a single command.
 
 ## Features
 
-- automatically downloads java runtimes
-- creates runtimes optimized for your application
+- downloads java runtimes automatically
+- makes runtimes optimized for your application
 - creates self-contained binaries for Linux, macOS and Windows using [warp-packer](https://github.com/dgiagio/warp)
+- works on Linux, macOS and Windows (with Windows Subsystem for Linux)
+- supports cross "compilation"
 
 ## TL;DR
 
@@ -14,7 +16,7 @@ Just put both `warp4j` and `warp-packer` somewhere in your PATH and run `warp4j 
 
 ## Install
 
-First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure other common tools available: `curl`, `awk`, `sed`. Then install `warp4j` like this:
+First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure other common tools available: `awk`, `curl`, `grep`, `sed`, `sort`, `tar`, `unzip`, optional: `zip`. Then install `warp4j` like this:
 
 ```
 $ LOCATION=/usr/local/bin \
@@ -25,6 +27,8 @@ chmod 755 $TEMP_LOCATION && \
 sudo mkdir -p $LOCATION && \
 sudo mv $TEMP_LOCATION $LOCATION/warp4j'
 ```
+
+Previous command can be also used to upgrade to the latest version.
 
 ## Usage
 
@@ -63,27 +67,36 @@ Options:
   -j, --java-version   <version>
                        override JDK/JRE version
                        examples: "11", "11.0", "11.0.2", "11.0.2+9"
-                       default: 11
-  --no-optimize        use JRE instead of optimized JDK
+                       (default: 11)
+  --no-optimize        use JRE instead of optimized JDK;
                        by default jdeps and jlink are used to create
                        optimized JDK for the partiular jar,
                        JRE is always used for java 8
-  --pull               check if more recent JDK/JRE distro is available
+  --pull               check if more recent JDK/JRE distro is available;
                        by default latest cached version that matches
                        "--java-version" is used
   --target-linux       create binary for Linux
   --target-macos       create binary for macOS
   --target-windows     create binary for Windows
-                       if no targets specified then create for all
+                       if no targets are specified then binaries for
+                       all targets are created
   --jvm-impl           jvm implementation: hotspot or openj9
-                       default: hotspot
+                       (default: hotspot)
   --jvm-options        <options>
                        passed to java like this:
                        "java <options> -jar <jar file>"
-                       use quotes, for example:
-                       '-Xms512m -Xmx1024m'
+                       use quotes when passing multiple options
+                       example: '-Xms512m -Xmx1024m'
   -h, --help           show this message
 ```
+
+## Compatibility
+
+Tested on the following operating systems:
+
+- Ubuntu 18.04
+- macOS Mojave
+- Windows Subsystem for Linux with Ubuntu 14.04
 
 ## Cache Location
 
@@ -91,4 +104,3 @@ Downloaded runtimes and prepared bundles are here:
 
 - Linux: `$HOME/.local/share/warp4j`
 - macOS: `$HOME/Library/Application Support/warp4j`
-- Windows: `%LOCALAPPDATA%\warp4j`
