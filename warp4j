@@ -11,6 +11,10 @@ function print_help {
     echo '                       override JDK/JRE version'
     echo '                       examples: "11", "11.0", "11.0.2", "11.0.2+9"'
     echo '                       (default: 11)'
+    echo '  -o, --output         <directory>'
+    echo '                       override output directory;'
+    echo '                       this is relative to current PWD'
+    echo '                       (default: ./warped)'
     echo '  --no-optimize        use JRE instead of optimized JDK;'
     echo '                       by default jdeps and jlink are used to create'
     echo '                       optimized JDK for the partiular jar,'
@@ -77,6 +81,10 @@ while [[ $# -gt 0 ]]; do
     -j|--java-version)
         JAVA_VERSION="$2"
         JAVA_VERSION_OVERRIDEN=true
+        shift 2
+    ;;
+    -o|--output)
+        OUTPUT_DIR_PATH="$2"
         shift 2
     ;;
     --no-optimize)
@@ -262,8 +270,15 @@ JAVA_DOWNLOAD_PATH=$CACHE_PATH/$JAVA_DISTRO_TYPE/$JVM_IMPL
 BUNDLES_PATH=$CACHE_PATH/bundle # prepare bundles here
 
 DIR="$(pwd -P)" # execution directory path
-WARPED_PATH=$DIR/warped # final binaries go here
-WARPED_TEMP_PATH=$DIR/warped-tmp # final binaries created here then moved to WARPED_PATH
+
+# final binaries created in WARPED_TEMP_PATH and then moved to WARPED_PATH
+if [[ -z $OUTPUT_DIR_PATH ]]; then
+    WARPED_PATH=$DIR/warped
+    WARPED_TEMP_PATH=$DIR/warped/tmp
+else
+    WARPED_PATH=$OUTPUT_DIR_PATH
+    WARPED_TEMP_PATH=$OUTPUT_DIR_PATH/tmp
+fi
 
 BUNDLED_DISTRO_SUBDIR="java" # runtime directory inside a bundle
 

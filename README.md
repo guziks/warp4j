@@ -78,6 +78,10 @@ Options:
                        override JDK/JRE version
                        examples: "11", "11.0", "11.0.2", "11.0.2+9"
                        (default: 11)
+  -o, --output         <directory>
+                       override output directory;
+                       this is relative to current PWD
+                       (default: ./warped)
   --no-optimize        use JRE instead of optimized JDK;
                        by default jdeps and jlink are used to create
                        optimized JDK for the partiular jar,
