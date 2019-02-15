@@ -70,11 +70,43 @@ function install() {
     fi
 }
 
+# returns missing dependencies
+function get_missing_deps() {
+    local deps=( 
+        "awk" \
+        "curl" \
+        "grep" \
+        "sed" \
+        "sort" \
+        "tar" \
+        "unzip" \
+        "zip" \
+    )
+    for d in ${deps[@]}; do
+        if ! command -v $d &> /dev/null ; then
+            echo -n "$d "
+        fi
+    done
+}
+
 WARP4J_LINK="https://raw.githubusercontent.com/guziks/warp4j/master/warp4j"
 
 echo "Getting information about warp-packer releases..."
 WARP_LINK=$(get_latest_warp_link $THIS_PLATFORM)
 
+MISSING_DEPS=$(get_missing_deps)
+
 install "warp-packer" "$WARP_LINK" && \
-install "warp4j" "$WARP4J_LINK" && \
-echo "Successfully installed"
+install "warp4j" "$WARP4J_LINK"
+
+if [[ -z $MISSING_DEPS ]]; then
+    echo "Successfully installed"
+else
+    echo "Main tools successfully installed"
+    echo "Please install following with your package manager:"
+    for d in ${MISSING_DEPS[@]}; do
+            echo -n "$d "
+    done
+    echo
+    exit 1
+fi
