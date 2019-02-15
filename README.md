@@ -9,6 +9,7 @@ Turn JAR (java archive) into self-contained executable in a single command.
 - creates self-contained binaries for Linux, macOS and Windows using [warp-packer](https://github.com/dgiagio/warp)
 - works on Linux, macOS and Windows (with Windows Subsystem for Linux)
 - supports cross "compilation"
+- does not require neither JDK nor JRE installed
 
 ## TL;DR
 
