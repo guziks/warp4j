@@ -59,11 +59,12 @@ function install() {
         echo "Error: Failed to download $name" >&2
         fail
     fi
-    echo "Installing $LOCATION/$name..."
-    chmod 755 "$temp_location" && \
-    sudo chown root:root "$temp_location" && \
-    sudo mkdir -p "$LOCATION" && \
-    sudo mv "$temp_location" "$LOCATION/$name"
+    echo "Creating $LOCATION/$name..."
+    sudo install -D \
+        --mode=755 \
+        --owner=root \
+        --group=root \
+        "$temp_location" "$LOCATION"
     if [[ $? != 0 ]]; then
         echo "Error: Failed to install $name" >&2
         fail
