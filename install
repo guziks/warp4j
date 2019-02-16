@@ -76,6 +76,7 @@ function get_missing_deps() {
     local deps=( 
         "awk" \
         "curl" \
+        "file" \
         "grep" \
         "sed" \
         "sort" \

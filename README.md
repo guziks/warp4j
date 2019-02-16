@@ -27,7 +27,7 @@ $ bash -c "$(curl -fsSL https://raw.githubusercontent.com/guziks/warp4j/master/i
 
 ### Manual
 
-First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure other common tools available: `awk`, `curl`, `grep`, `sed`, `sort`, `tar`, `unzip`, optional: `zip`. Then install `warp4j` like this:
+First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure other common tools available: `awk`, `curl`, `file`, `grep`, `sed`, `sort`, `tar`, `unzip`, optional: `zip`. Then install `warp4j` like this:
 
 ```
 $ LOCATION=/usr/local/bin \
