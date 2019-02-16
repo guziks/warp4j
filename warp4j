@@ -265,6 +265,11 @@ case $THIS_PLATFORM in
     *)    CACHE_PATH="$HOME/.local/share/warp4j" ;;
 esac
 
+# cache path can be overriden with environment variable
+if [[ $WARP4J_CACHE ]]; then
+    CACHE_PATH=$WARP4J_CACHE
+fi
+
 # this is not full path, platform name and full version will be added
 JAVA_DOWNLOAD_PATH=$CACHE_PATH/$JAVA_DISTRO_TYPE/$JVM_IMPL
 BUNDLES_PATH=$CACHE_PATH/bundle # prepare bundles here
