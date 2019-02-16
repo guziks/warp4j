@@ -17,31 +17,15 @@ Just put both `warp4j` and `warp-packer` somewhere in your PATH and run `warp4j 
 
 ## Install
 
-### One-liner
-
-Installs latest versions of both `warp4j` and `warp-packer`:
+Curl one-liner installs latest versions of both `warp4j` and `warp-packer`:
 
 ```
 $ bash -c "$(curl -fsSL https://raw.githubusercontent.com/guziks/warp4j/master/install)"
 ```
 
-### Manual
+This script will show missing dependencies (if there are any), they must be installed with your package manager.
 
-First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure other common tools available: `awk`, `curl`, `file`, `grep`, `sed`, `sort`, `tar`, `unzip`, optional: `zip`. Then install `warp4j` like this:
-
-```
-$ LOCATION=/usr/local/bin \
-LINK=https://raw.githubusercontent.com/guziks/warp4j/master/warp4j \
-TEMP_LOCATION=/tmp/warp4j \
-bash -c 'curl -fsSL -o $TEMP_LOCATION $LINK && \
-sudo install -D \
-  --mode=755 \
-  --owner=root \
-  --group=root \
-  "$TEMP_LOCATION" "$LOCATION"'
-```
-
-Previous command can be also used to upgrade to the latest version.
+See more install methods [here](INSTALL.md).
 
 ## Usage
 
