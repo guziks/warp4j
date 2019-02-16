@@ -272,12 +272,11 @@ BUNDLES_PATH=$CACHE_PATH/bundle # prepare bundles here
 DIR="$(pwd -P)" # execution directory path
 
 # final binaries created in WARPED_TEMP_PATH and then moved to WARPED_PATH
+WARPED_TEMP_PATH=$CACHE_PATH/out-temp
 if [[ -z $OUTPUT_DIR_PATH ]]; then
     WARPED_PATH=$DIR/warped
-    WARPED_TEMP_PATH=$DIR/warped/tmp
 else
     WARPED_PATH=$OUTPUT_DIR_PATH
-    WARPED_TEMP_PATH=$OUTPUT_DIR_PATH/tmp
 fi
 
 BUNDLED_DISTRO_SUBDIR="java" # runtime directory inside a bundle
