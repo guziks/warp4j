@@ -92,9 +92,9 @@ Options:
   --pull               check if more recent JDK/JRE distro is available;
                        by default latest cached version that matches
                        "--java-version" is used
-  --target-linux       create binary for Linux
-  --target-macos       create binary for macOS
-  --target-windows     create binary for Windows
+  --linux              create binary for Linux
+  --macos              create binary for macOS
+  --windows            create binary for Windows
                        if no targets are specified then binaries for
                        all targets are created
   --jvm-impl           jvm implementation: hotspot or openj9

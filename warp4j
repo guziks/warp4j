@@ -22,9 +22,9 @@ function print_help {
     echo '  --pull               check if more recent JDK/JRE distro is available;'
     echo '                       by default latest cached version that matches'
     echo '                       "--java-version" is used'
-    echo '  --target-linux       create binary for Linux'
-    echo '  --target-macos       create binary for macOS'
-    echo '  --target-windows     create binary for Windows'
+    echo '  --linux              create binary for Linux'
+    echo '  --macos              create binary for macOS'
+    echo '  --windows            create binary for Windows'
     echo '                       if no targets are specified then binaries for'
     echo '                       all targets are created'
     echo '  --jvm-impl           jvm implementation: hotspot or openj9'
@@ -95,15 +95,15 @@ while [[ $# -gt 0 ]]; do
         PULL=true
         shift
     ;;
-    --target-linux)
+    --linux)
         TARGETS+=($LIN)
         shift
     ;;
-    --target-macos)
+    --macos)
         TARGETS+=($MAC)
         shift
     ;;
-    --target-windows)
+    --windows)
         TARGETS+=($WIN)
         shift
     ;;
