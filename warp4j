@@ -643,7 +643,6 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.cmd" \
             --output "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" \
             &> /dev/null
-        mv "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" "$WARPED_PATH/$APP_NAME-windows.exe"
         if command -v zip &> /dev/null ; then (
             cd "$WARPED_TEMP_PATH/$WIN"
             zip -r "$WARPED_TEMP_PATH/$APP_NAME-$WIN-x64.zip" "$APP_NAME.exe" &> /dev/null
@@ -651,6 +650,7 @@ function warp_targets() {
         ) else
             echo "Warning: 'zip' not found, will skip creation of archive for windows" >&2
         fi
+        mv "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" "$WARPED_PATH/$APP_NAME-windows.exe"
         rmdir "$WARPED_TEMP_PATH/$WIN"
     fi
     
