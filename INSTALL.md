@@ -8,7 +8,7 @@ First install [warp-packer](https://github.com/dgiagio/warp/releases) and ensure
 
 ```
 $ LOCATION=/usr/local/bin \
-LINK=https://raw.githubusercontent.com/guziks/warp4j/master/warp4j \
+LINK=https://raw.githubusercontent.com/guziks/warp4j/stable/warp4j \
 TEMP_LOCATION=/tmp/warp4j \
 bash -c 'curl -fsSL -o $TEMP_LOCATION $LINK && \
 sudo install -D \

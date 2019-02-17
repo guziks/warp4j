@@ -91,7 +91,7 @@ function get_missing_deps() {
     done
 }
 
-WARP4J_LINK="https://raw.githubusercontent.com/guziks/warp4j/master/warp4j"
+WARP4J_LINK="https://raw.githubusercontent.com/guziks/warp4j/stable/warp4j"
 
 echo "Getting information about warp-packer releases..."
 WARP_LINK=$(get_latest_warp_link $THIS_PLATFORM)
