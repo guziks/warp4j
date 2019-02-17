@@ -69,6 +69,11 @@ Options:
                        override output directory;
                        this is relative to current PWD
                        (default: ./warped)
+  --list               show available java releases;
+                       takes into consideration other options:
+                       "--java-version", "--no-optimize", "--jvm-impl";
+                       the output may be used to specify concrete
+                       "--java-version"
   --no-optimize        use JRE instead of optimized JDK;
                        by default jdeps and jlink are used to create
                        optimized JDK for the partiular jar,

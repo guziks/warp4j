@@ -15,6 +15,11 @@ function print_help {
     echo '                       override output directory;'
     echo '                       this is relative to current PWD'
     echo '                       (default: ./warped)'
+    echo '  --list               show available java releases;'
+    echo '                       takes into consideration other options:'
+    echo '                       "--java-version", "--no-optimize", "--jvm-impl";'
+    echo '                       the output may be used to specify concrete'
+    echo '                       "--java-version"'
     echo '  --no-optimize        use JRE instead of optimized JDK;'
     echo '                       by default jdeps and jlink are used to create'
     echo '                       optimized JDK for the partiular jar,'
@@ -86,6 +91,10 @@ while [[ $# -gt 0 ]]; do
     -o|--output)
         OUTPUT_DIR_PATH="$2"
         shift 2
+    ;;
+    --list)
+        LIST_RELEASES=true
+        shift
     ;;
     --no-optimize)
         NO_OPTIMIZE=true
@@ -164,7 +173,6 @@ check_deps
 # apart from options only one argument is allowed
 if [[ $# -gt 1 ]]; then
     echo "Error: Too many arguments: $@, expecting only jar name" >&2
-    print_help
     exit 1
 else
     JAR=$1
@@ -205,28 +213,6 @@ test -z $JAVA_VERSION && JAVA_VERSION=$LATEST_LTS
 test -z $TARGETS && TARGETS=($LIN $MAC $WIN)
 test -z $JVM_IMPL && JVM_IMPL=$JVM_IMPL_HOTSPOT
 
-JAR_FILE_BASE_NAME=$(basename -- "$JAR") # "my-app.jAr"
-JAR_EXTENSION="${JAR_FILE_BASE_NAME##*.}" # "jAr" 
-JAR_EXTENSION_LOWERCASE=$(printf "%s" "$JAR_EXTENSION" | tr '[:upper:]' '[:lower:]') # "jar"
-JAR_NAME="${JAR_FILE_BASE_NAME%.*}" # "my-app"
-
-APP_NAME=$JAR_NAME # final binary name
-LAUNCHER_NAME=$JAR_NAME # launcher name inside bundle
-
-# checking jar file exists
-if [[ ! -e $JAR ]]; then
-    echo "Error: File \"$JAR\" does not exist" >&2
-    exit 1
-fi
-
-# checking file is actually java archive
-if ([[ $(file $JAR) != *"Java"* ]] && # it could be "Java archive data" or "Java Jar file data (zip)"
-   [[ $(file $JAR) != *"Zip"*  ]]) || # or "Zip archive data"
-   [[ $JAR_EXTENSION_LOWERCASE != "jar" ]]; then
-    echo "Error: File \"$JAR\" is not a java archive" >&2
-    exit 1
-fi
-
 # returns java branch version
 function get_base_version() {
     local version=$1
@@ -251,6 +237,103 @@ function choose_distro_type() {
 
 # actually choose distro type
 JAVA_DISTRO_TYPE=$(choose_distro_type)
+
+# generates adoptopenjdk api url
+function api_url() {
+    local request=$1 # info/binary
+    local platform=$2 # windows/linux/macos
+    # adoptopenjdk uses "mac" instead of "macos"
+    if [[ $platform == "macos" ]]; then
+        platform="mac"
+    fi
+    echo -n "https://api.adoptopenjdk.net/v2/\
+$request/releases/openjdk$JAVA_VERSION_BASE?\
+openjdk_impl=$JVM_IMPL&\
+os=$platform&\
+arch=x64&\
+type=$JAVA_DISTRO_TYPE"
+}
+
+# requests info about all releases for given platform and java branch
+function fetch_distro_info() {
+    local platform=$1 # platform ID
+    local branch=$2 # 8/9/10/11...
+    echo "Fetching $JVM_IMPL-$JAVA_DISTRO_TYPE-$branch info..." >&2
+    curl -s $(api_url info $platform)
+    if [[ $? != 0 ]]; then
+        echo "Error: Failed to fetch java $branch info" >&2
+        fail
+    fi
+}
+
+# extracts all concrete java versions that match the version specified by user
+# from provided distro info
+function find_matched_versions() {
+    local info=$1
+    local user_version=$2
+    # turning something like "11.0.1+13" into regexp like "^11\.0\.1\+13"
+    local pattern="^"$(echo $user_version \
+        | sed -e 's/\./\\\./g' -e 's/\+/\\\+/g')
+    local versions=$(echo "$info" \
+        | grep '"semver"' \
+        | sort --reverse --version-sort \
+        | awk '{print $2}' \
+        | sed -e 's/"//g' -e 's/,//')
+    for v in ${versions[@]}; do
+        if [[ $v =~ $pattern ]]; then
+            echo $v
+        fi
+    done
+}
+
+# prints all concrete java versions that match the version specified by user
+function list_releases() {
+    local info
+    local matched
+    local printed
+    local platform="linux" # just picked any
+    info=$(fetch_distro_info $platform $JAVA_VERSION_BASE)
+    matched=$(find_matched_versions "$info" $JAVA_VERSION)
+    if [[ $matched ]]; then
+        echo "Releases that match $JAVA_VERSION:"
+        for m in ${matched[@]}; do
+            if [[ ${printed[@]} != *"$m"* ]]; then
+                echo $m
+                printed+=($m)
+            fi
+        done
+    else
+        echo "No releases that match $JAVA_VERSION"
+    fi
+}
+
+# actually show matched releases
+if [[ $LIST_RELEASES ]]; then
+    list_releases
+    exit
+fi
+
+JAR_FILE_BASE_NAME=$(basename -- "$JAR") # "my-app.jAr"
+JAR_EXTENSION="${JAR_FILE_BASE_NAME##*.}" # "jAr" 
+JAR_EXTENSION_LOWERCASE=$(printf "%s" "$JAR_EXTENSION" | tr '[:upper:]' '[:lower:]') # "jar"
+JAR_NAME="${JAR_FILE_BASE_NAME%.*}" # "my-app"
+
+APP_NAME=$JAR_NAME # final binary name
+LAUNCHER_NAME=$JAR_NAME # launcher name inside bundle
+
+# checking jar file exists
+if [[ ! -e $JAR ]]; then
+    echo "Error: File \"$JAR\" does not exist" >&2
+    exit 1
+fi
+
+# checking file is actually java archive
+if ([[ $(file $JAR) != *"Java"* ]] && # it could be "Java archive data" or "Java Jar file data (zip)"
+   [[ $(file $JAR) != *"Zip"*  ]]) || # or "Zip archive data"
+   [[ $JAR_EXTENSION_LOWERCASE != "jar" ]]; then
+    echo "Error: File \"$JAR\" is not a java archive" >&2
+    exit 1
+fi
 
 # even if this platform is not targeted, we still need
 # a JDK for this platform to optimize JDKs for other platforms 
@@ -321,22 +404,6 @@ EXIT /B %ERRORLEVEL%
 ' 
 }
 
-# generates adoptopenjdk api url
-function api_url() {
-    local request=$1 # info/binary
-    local platform=$2 # windows/linux/macos
-    # adoptopenjdk uses "mac" instead of "macos"
-    if [[ $platform == "macos" ]]; then
-        platform="mac"
-    fi
-    echo -n "https://api.adoptopenjdk.net/v2/\
-$request/releases/openjdk$JAVA_VERSION_BASE?\
-openjdk_impl=$JVM_IMPL&\
-os=$platform&\
-arch=x64&\
-type=$JAVA_DISTRO_TYPE"
-}
-
 # these files are success markers
 MARKER_DOWNLOADED="downloaded" # after runtime download
 MARKER_UNPACKED="unpacked" # after runtime uncompress
@@ -363,18 +430,6 @@ function find_latest_cached() {
         echo $version
     else
         return 1
-    fi
-}
-
-# requests info about all releases for given platform and java branch
-function fetch_distro_info() {
-    local platform=$1 # platform ID
-    local branch=$2 # 8/9/10/11...
-    echo "Fetching $JVM_IMPL-$JAVA_DISTRO_TYPE-$branch-$platform info..." >&2
-    curl -s $(api_url info $platform)
-    if [[ $? != 0 ]]; then
-        echo "Error: Failed to fetch JDK $branch info for $platform" >&2
-        fail
     fi
 }
 
