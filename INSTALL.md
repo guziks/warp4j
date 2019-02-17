@@ -22,23 +22,14 @@ Previous command can be also used to upgrade to the latest version.
 
 ## Docker
 
-```
-$ docker run --rm -it \
-    -e "WARP4J_CACHE=/cache" \
-    --volume <cache on host>:/cache \
-    --volume <jars on host>:/workdir \
-    --user $(id -u):$(id -g) \
-    guziks/warp4j <app.jar>
-```
-
-Change according to your requirements, but volume with working directory is mandatory.
+See docker hub [page](https://hub.docker.com/r/guziks/warp4j).
 
 ## Moor
 
-To simplify the command above make a launcher with [moor](https://github.com/guziks/moor):
+Instead of direct `docker run` command you can make a launcher with [moor](https://github.com/guziks/moor):
 
 ```
-$ moor guziks/warp4j warp4j
+$ moor guziks/warp4j:stable warp4j
 ```
 
 Then use as an ordinary command.
