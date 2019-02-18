@@ -669,8 +669,17 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.sh" \
             --output "$WARPED_TEMP_PATH/$LIN/$APP_NAME" \
             &> /dev/null
+        if [[ $? != 0 ]]; then
+            echo "Error: Failed to warp for $LIN" >&2
+            fail
+        fi
+        echo "Archiving for $LIN..."
         tar -C "$WARPED_TEMP_PATH/$LIN" -czf "$WARPED_TEMP_PATH/$APP_NAME-$LIN-x64.tar.gz" "$APP_NAME"
-        mv "$WARPED_TEMP_PATH/$LIN/$APP_NAME" "$WARPED_PATH/$APP_NAME-$LIN"
+        if [[ $? != 0 ]]; then
+            echo "Error: Failed to make archive for $LIN" >&2
+            fail
+        fi
+        mv "$WARPED_TEMP_PATH/$LIN/$APP_NAME" "$WARPED_PATH/$APP_NAME-$LIN-x64"
         mv "$WARPED_TEMP_PATH/$APP_NAME-$LIN-x64.tar.gz" "$WARPED_PATH"
         rmdir "$WARPED_TEMP_PATH/$LIN"
     fi
@@ -684,8 +693,17 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.sh" \
             --output "$WARPED_TEMP_PATH/$MAC/$APP_NAME" \
             &> /dev/null
+        if [[ $? != 0 ]]; then
+            echo "Error: Failed to warp for $MAC" >&2
+            fail
+        fi
+        echo "Archiving for $MAC..."
         tar -C "$WARPED_TEMP_PATH/$MAC" -czf "$WARPED_TEMP_PATH/$APP_NAME-$MAC-x64.tar.gz" "$APP_NAME"
-        mv "$WARPED_TEMP_PATH/$MAC/$APP_NAME" "$WARPED_PATH/$APP_NAME-$MAC"
+        if [[ $? != 0 ]]; then
+            echo "Error: Failed to make archive for $MAC" >&2
+            fail
+        fi
+        mv "$WARPED_TEMP_PATH/$MAC/$APP_NAME" "$WARPED_PATH/$APP_NAME-$MAC-x64"
         mv "$WARPED_TEMP_PATH/$APP_NAME-$MAC-x64.tar.gz" "$WARPED_PATH"
         rmdir "$WARPED_TEMP_PATH/$MAC"
     fi
@@ -699,14 +717,23 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.cmd" \
             --output "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" \
             &> /dev/null
+        if [[ $? != 0 ]]; then
+            echo "Error: Failed to warp for $WIN" >&2
+            fail
+        fi
         if command -v zip &> /dev/null ; then (
+            echo "Archiving for $WIN..."
             cd "$WARPED_TEMP_PATH/$WIN"
             zip -r "$WARPED_TEMP_PATH/$APP_NAME-$WIN-x64.zip" "$APP_NAME.exe" &> /dev/null
+            if [[ $? != 0 ]]; then
+                echo "Error: Failed to make archive for $WIN" >&2
+                fail
+            fi
             mv "$WARPED_TEMP_PATH/$APP_NAME-$WIN-x64.zip" "$WARPED_PATH"
         ) else
             echo "Warning: 'zip' not found, will skip creation of archive for windows" >&2
         fi
-        mv "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" "$WARPED_PATH/$APP_NAME-windows.exe"
+        mv "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" "$WARPED_PATH/$APP_NAME-windows-x64.exe"
         rmdir "$WARPED_TEMP_PATH/$WIN"
     fi
     
