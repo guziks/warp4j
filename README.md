@@ -43,11 +43,11 @@ my-app.jar
 warped
 
 $ ls warped
-my-app-linux
+my-app-linux-x64
 my-app-linux-x64.tar.gz
-my-app-macos
+my-app-macos-x64
 my-app-macos-x64.tar.gz
-my-app-windows.exe
+my-app-windows-x64.exe
 my-app-windows-x64.zip
 ```
 
@@ -76,7 +76,7 @@ Options:
                        "--java-version"
   --no-optimize        use JRE instead of optimized JDK;
                        by default jdeps and jlink are used to create
-                       optimized JDK for the partiular jar,
+                       optimized JDK for the particular jar;
                        JRE is always used for java 8
   --pull               check if more recent JDK/JRE distro is available;
                        by default latest cached version that matches
@@ -90,7 +90,7 @@ Options:
                        (default: hotspot)
   --jvm-options        <options>
                        passed to java like this:
-                       "java <options> -jar <jar file>"
+                       "java <options> -jar <jar file>";
                        use quotes when passing multiple options
                        example: '-Xms512m -Xmx1024m'
   -h, --help           show this message
@@ -110,3 +110,5 @@ Downloaded runtimes and prepared bundles are here:
 
 - Linux: `$HOME/.local/share/warp4j`
 - macOS: `$HOME/Library/Application Support/warp4j`
+
+To override cache path, set `WARP4J_CACHE` environment variable.

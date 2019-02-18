@@ -22,7 +22,7 @@ function print_help {
     echo '                       "--java-version"'
     echo '  --no-optimize        use JRE instead of optimized JDK;'
     echo '                       by default jdeps and jlink are used to create'
-    echo '                       optimized JDK for the partiular jar,'
+    echo '                       optimized JDK for the particular jar;'
     echo '                       JRE is always used for java 8'
     echo '  --pull               check if more recent JDK/JRE distro is available;'
     echo '                       by default latest cached version that matches'
@@ -36,7 +36,7 @@ function print_help {
     echo '                       (default: hotspot)'
     echo '  --jvm-options        <options>'
     echo '                       passed to java like this:'
-    echo '                       "java <options> -jar <jar file>"'
+    echo '                       "java <options> -jar <jar file>";'
     echo '                       use quotes when passing multiple options'
     echo "                       example: '-Xms512m -Xmx1024m'"
     echo '  -h, --help           show this message'
