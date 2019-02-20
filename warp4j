@@ -47,7 +47,29 @@ function print_help {
 trap "exit 1" TERM
 export TOP_PID=$$
 function fail() {
-   kill -s TERM $TOP_PID
+    kill -s TERM $TOP_PID
+}
+
+# fail with a message
+function fail_with() {
+    local message=$1
+    echo "Error: $message" >&2
+    fail
+}
+
+# if error code is not zero fail with a message 
+function fail_if() {
+    local error_code=$1
+    local message=$2
+    if [[ $error_code != 0 ]]; then
+        fail_with "$message"
+    fi
+}
+
+# common warning
+function warn() {
+    local message=$1
+    echo "Warning: $message" >&2
 }
 
 # platform IDs
@@ -62,8 +84,7 @@ function get_this_platform() {
         Linux*) echo $LIN ;;
         Darwin*) echo $MAC ;;
         *)
-            echo "Error: Unsupported platform $this_platform" >&2
-            fail
+            fail_with "Unsupported platform $this_platform"
         ;;
     esac
 }
@@ -125,8 +146,7 @@ while [[ $# -gt 0 ]]; do
         shift 2
     ;;
     -*|--*) # unsupported options
-        echo "Error: Unsupported option $1" >&2
-        exit 1
+        fail_with "Unsupported option $1"
     ;;
     *)
         POSITIONAL+=("$1") # store positional arguments
@@ -172,8 +192,7 @@ check_deps
 
 # apart from options only one argument is allowed
 if [[ $# -gt 1 ]]; then
-    echo "Error: Too many arguments: $@, expecting only jar name" >&2
-    exit 1
+    fail_with "Too many arguments: $@, expecting only jar name"
 else
     JAR=$1
 fi
@@ -191,8 +210,7 @@ function java_version_is_correct() {
 
 # validate java version
 if [[ $JAVA_VERSION ]] && ! java_version_is_correct $JAVA_VERSION ; then
-    echo "Error: JDK version \"$JAVA_VERSION\" is not correct" >&2
-    exit 1
+    fail_with "JDK version \"$JAVA_VERSION\" is not correct"
 fi
 
 JVM_IMPL_HOTSPOT=hotspot
@@ -202,8 +220,7 @@ JVM_IMPL_OPENJ9=openj9
 if [[ $JVM_IMPL ]] && 
    [[ $JVM_IMPL != $JVM_IMPL_HOTSPOT ]] &&
    [[ $JVM_IMPL != $JVM_IMPL_OPENJ9 ]]; then
-    echo "Error: jvm implementation \"$JVM_IMPL\" is not correct" >&2
-    exit 1
+    fail_with "jvm implementation \"$JVM_IMPL\" is not correct"
 fi
 
 LATEST_LTS=11 # latest LTS java branch
@@ -258,12 +275,8 @@ type=$JAVA_DISTRO_TYPE"
 function fetch_distro_info() {
     local platform=$1 # platform ID
     local branch=$2 # 8/9/10/11...
-    echo "Fetching $JVM_IMPL-$JAVA_DISTRO_TYPE-$branch info..." >&2
     curl -s $(api_url info $platform)
-    if [[ $? != 0 ]]; then
-        echo "Error: Failed to fetch java $branch info" >&2
-        fail
-    fi
+    fail_if $? "Failed to fetch java $branch info"
 }
 
 # extracts all concrete java versions that match the version specified by user
@@ -323,16 +336,14 @@ LAUNCHER_NAME=$JAR_NAME # launcher name inside bundle
 
 # checking jar file exists
 if [[ ! -e $JAR ]]; then
-    echo "Error: File \"$JAR\" does not exist" >&2
-    exit 1
+    fail_with "File \"$JAR\" does not exist"
 fi
 
 # checking file is actually java archive
 if ([[ $(file $JAR) != *"Java"* ]] && # it could be "Java archive data" or "Java Jar file data (zip)"
    [[ $(file $JAR) != *"Zip"*  ]]) || # or "Zip archive data"
    [[ $JAR_EXTENSION_LOWERCASE != "jar" ]]; then
-    echo "Error: File \"$JAR\" is not a java archive" >&2
-    exit 1
+    fail_with "File \"$JAR\" is not a java archive"
 fi
 
 # even if this platform is not targeted, we still need
@@ -454,8 +465,7 @@ function find_latest_version() {
         fi
     done
     if [[ -z $matched_version ]]; then
-        echo "Error: Can't find distro that matches $user_version" >&2
-        fail
+        fail_with "Can't find distro that matches $user_version"
     fi
     echo $matched_version
 }
@@ -470,8 +480,7 @@ function find_distro_link() {
         | awk '{print $2}' \
         | sed -e 's/"//g' -e 's/,//')
     if [[ -z $link ]]; then
-        echo "Error: Can't find download link for $version" >&2
-        fail
+        fail_with "Can't find download link for $version"
     fi
     echo "$link"
 }
@@ -490,8 +499,7 @@ function download_distro() {
         if [[ $? == 0 ]]; then
             touch $MARKER_DOWNLOADED
         else
-            echo "Error: Failed to download $JVM_IMPL-$JAVA_DISTRO_TYPE-$version-$platform" >&2
-            fail
+            fail_with "Failed to download $JVM_IMPL-$JAVA_DISTRO_TYPE-$version-$platform"
         fi
     )
 }
@@ -587,8 +595,7 @@ function ensure_distro_unpacked() {
         if [[ $? == 0 ]]; then
             touch "$download_dir/$MARKER_UNPACKED"
         else
-            echo "Error: Failed to unpack $JVM_IMPL-$JAVA_DISTRO_TYPE-$version-$platform" >&2
-            fail
+            fail_with "Failed to unpack $JVM_IMPL-$JAVA_DISTRO_TYPE-$version-$platform"
         fi
     fi
 }
@@ -621,10 +628,7 @@ function create_optimized_runtime() {
         --module-path "$jmods" \
         --add-modules $MODULES \
         --output "$BUNDLES_PATH/$platform/$BUNDLED_DISTRO_SUBDIR"
-    if [[ $? != 0 ]]; then
-        echo "Error: Failed to optimize runtime" >&2
-        fail
-    fi
+    fail_if $? "Failed to optimize runtime"
 }
 
 # creates warp bundle for the platform
@@ -669,16 +673,10 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.sh" \
             --output "$WARPED_TEMP_PATH/$LIN/$APP_NAME" \
             &> /dev/null
-        if [[ $? != 0 ]]; then
-            echo "Error: Failed to warp for $LIN" >&2
-            fail
-        fi
+        fail_if $? "Failed to warp for $LIN"
         echo "Archiving for $LIN..."
         tar -C "$WARPED_TEMP_PATH/$LIN" -czf "$WARPED_TEMP_PATH/$APP_NAME-$LIN-x64.tar.gz" "$APP_NAME"
-        if [[ $? != 0 ]]; then
-            echo "Error: Failed to make archive for $LIN" >&2
-            fail
-        fi
+        fail_if $? "Failed to make archive for $LIN"
         mv "$WARPED_TEMP_PATH/$LIN/$APP_NAME" "$WARPED_PATH/$APP_NAME-$LIN-x64"
         mv "$WARPED_TEMP_PATH/$APP_NAME-$LIN-x64.tar.gz" "$WARPED_PATH"
         rmdir "$WARPED_TEMP_PATH/$LIN"
@@ -693,16 +691,10 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.sh" \
             --output "$WARPED_TEMP_PATH/$MAC/$APP_NAME" \
             &> /dev/null
-        if [[ $? != 0 ]]; then
-            echo "Error: Failed to warp for $MAC" >&2
-            fail
-        fi
+        fail_if $? "Failed to warp for $MAC"
         echo "Archiving for $MAC..."
         tar -C "$WARPED_TEMP_PATH/$MAC" -czf "$WARPED_TEMP_PATH/$APP_NAME-$MAC-x64.tar.gz" "$APP_NAME"
-        if [[ $? != 0 ]]; then
-            echo "Error: Failed to make archive for $MAC" >&2
-            fail
-        fi
+        fail_if $? "Failed to make archive for $MAC"
         mv "$WARPED_TEMP_PATH/$MAC/$APP_NAME" "$WARPED_PATH/$APP_NAME-$MAC-x64"
         mv "$WARPED_TEMP_PATH/$APP_NAME-$MAC-x64.tar.gz" "$WARPED_PATH"
         rmdir "$WARPED_TEMP_PATH/$MAC"
@@ -717,21 +709,15 @@ function warp_targets() {
             --exec "$LAUNCHER_NAME.cmd" \
             --output "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" \
             &> /dev/null
-        if [[ $? != 0 ]]; then
-            echo "Error: Failed to warp for $WIN" >&2
-            fail
-        fi
+        fail_if $? "Failed to warp for $WIN"
         if command -v zip &> /dev/null ; then (
             echo "Archiving for $WIN..."
             cd "$WARPED_TEMP_PATH/$WIN"
             zip -r "$WARPED_TEMP_PATH/$APP_NAME-$WIN-x64.zip" "$APP_NAME.exe" &> /dev/null
-            if [[ $? != 0 ]]; then
-                echo "Error: Failed to make archive for $WIN" >&2
-                fail
-            fi
+            fail_if $? "Failed to make archive for $WIN"
             mv "$WARPED_TEMP_PATH/$APP_NAME-$WIN-x64.zip" "$WARPED_PATH"
         ) else
-            echo "Warning: 'zip' not found, will skip creation of archive for windows" >&2
+            warn "'zip' not found, will skip creation of archive for windows"
         fi
         mv "$WARPED_TEMP_PATH/$WIN/$APP_NAME.exe" "$WARPED_PATH/$APP_NAME-windows-x64.exe"
         rmdir "$WARPED_TEMP_PATH/$WIN"
