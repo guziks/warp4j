@@ -475,8 +475,11 @@ function find_distro_link() {
     local info=$1 # info fetched from AdoptOpenJDK
     local version=$2 # concrete distro version like "11.0.2+9"
     local link=$(echo "$info" \
+        | grep -B13 "\"heap_size\": \"normal\"" \
         | grep -B11 "\"semver\": \"$version\"" \
         | grep "binary_link" \
+        | sort --reverse \
+        | head -n 1 \
         | awk '{print $2}' \
         | sed -e 's/"//g' -e 's/,//')
     if [[ -z $link ]]; then
