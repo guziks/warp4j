@@ -597,6 +597,10 @@ function ensure_distro_unpacked() {
         esac
         if [[ $? == 0 ]]; then
             touch "$download_dir/$MARKER_UNPACKED"
+            case $platform in
+                $WIN) rm "$download_dir"/*.zip    ;;
+                *)    rm "$download_dir"/*.tar.gz ;;
+            esac
         else
             fail_with "Failed to unpack $JVM_IMPL-$JAVA_DISTRO_TYPE-$version-$platform"
         fi
