@@ -192,7 +192,7 @@ check_deps
 
 # apart from options only one argument is allowed
 if [[ $# -gt 1 ]]; then
-    fail_with "Too many arguments: $@, expecting only jar name"
+    fail_with "Too many arguments: $*; expecting only jar name"
 else
     JAR=$1
 fi
