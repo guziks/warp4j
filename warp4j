@@ -341,7 +341,8 @@ fi
 
 # checking file is actually java archive
 if ([[ $(file $JAR) != *"Java"* ]] && # it could be "Java archive data" or "Java Jar file data (zip)"
-   [[ $(file $JAR) != *"Zip"*  ]]) || # or "Zip archive data"
+   [[ $(file $JAR) != *"Zip"* ]] && # or "Zip archive data"
+   [[ $(file $JAR) != *"POSIX shell script executable (binary data)"* ]]) || # or JAR embedded in POSIX script
    [[ $JAR_EXTENSION_LOWERCASE != "jar" ]]; then
     fail_with "File \"$JAR\" is not a java archive"
 fi
